@@ -1,8 +1,5 @@
-The contained files are modified from CellProfiler/python-bioformats. The
-copied files were under BSD license, with the exception of the resource files
-within 'tests', which are unmodified and licensed under the GNU General
-Public License version. See the file 'COPYING' for the terms of the GNU GPL
-license.
+The contained files are modified from CellProfiler/python-bioformats. These 
+files are under BSD license.
 
 BSD 3-Clause License
 
