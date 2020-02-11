@@ -20,7 +20,7 @@ setuptools.setup(
     install_requires=[
         "future",
     ],
-    packages=["oxdls"],
+    py_modules=["oxdls"],
     classifiers=[
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
