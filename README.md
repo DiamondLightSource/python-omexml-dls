@@ -1,9 +1,6 @@
-# omexml-dls
-[Repository](https://github.com/DiamondLightSource/python-omexml-dls)
+# [omexml-dls](https://github.com/DiamondLightSource/python-omexml-dls)
 
-Package to help simply and consistently create and parse OME metadata for B24 of Diamond Light Source Ltd. This is 
-a modified copy of [python_bioformats](https://github.com/CellProfiler/python-bioformats)' omexml.py and tests. This package extends capabilities, predominantly in 
-terms of ROIs, while offering a light-weight distribution of the omexml file.
+Package to help simply and consistently create and parse OME metadata for B24 of Diamond Light Source Ltd. This is a modified copy of [python_bioformats](https://github.com/CellProfiler/python-bioformats)' omexml.py. This package extends capabilities, predominantly in terms of ROIs, while offering a light-weight distribution of the omexml file.
 
 #### Recommended import:
 `from oxdls import OMEXML`
