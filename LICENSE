@@ -1,5 +1,5 @@
-The contained files are modified from CellProfiler/python-bioformats. These 
-files are under BSD license.
+This package is under a BSD license. omexml.py is modified from 
+python-bioformats (the original file is under BSD license).
 
 BSD 3-Clause License
 
