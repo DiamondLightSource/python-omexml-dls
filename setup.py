@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="omexml-dls",
-    version="1.0.1",
+    version="1.0.2",
     author="Thomas M Fish",
     author_email="thomas.fish@diamond.ac.uk",
     description="Package for simple and consistent creation and parsing of OME metadata for B24 of Diamond Light Source Ltd.",
