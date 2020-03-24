@@ -318,7 +318,7 @@ class OMEXML(object):
     >>> o.image().Pixels.Channel(1).Name = "Green"
     >>> o.image().Pixels.Channel(2).Name = "Blue"
 
-    See the `OME-XML schema documentation <http://git.openmicroscopy.org/oxdls/develop/components/specification/Documentation/Generated/OME-2011-06/ome.html>`_.
+    See the `OME-XML schema documentation <http://git.openmicroscopy.org/src/develop/components/specification/Documentation/Generated/OME-2011-06/ome.html>`_.
 
     '''
     def __init__(self, xml=None):
