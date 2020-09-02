@@ -514,6 +514,44 @@ class OMEXML(object):
             self.node.set("SamplesPerPixel", str(value))
         SamplesPerPixel = property(get_SamplesPerPixel, set_SamplesPerPixel)
 
+        def get_IlluminationType(self):
+            self.node.get("IlluminationType")
+
+        def set_IlluminationType(self, value):
+        '''The method of illumination used to capture the channel.'''
+            self.node.set("IlluminationType", str(value))
+        IlluminationType = property(get_IlluminationType, set_IlluminationType)
+
+        def get_PinholeSize(self):
+            return get_float_attr(self.node, "PinholeSize")
+
+        def set_PinholeSize(self, value):
+            '''
+            The optional PinholeSize attribute allows specifying adjustable
+            pin hole diameters for confocal microscopes. Units are set by PinholeSizeUnit - default:µm).
+            '''
+            try:
+                value = float(value)
+                if value <= 0.0:
+                    raise ValueError
+                self.node.set("PinholeSize", value)
+                if not self.get_PinholeSizeUnit():
+                    default_unit = "µm"
+                    logging.info("Setting PinholeSizeUnit to %s", default_unit)
+                    self.set_PinholeSizeUnit(default_unit)
+            except ValueError:
+                logging.error("PinholeSize must be a positive number")
+                raise
+        PinholeSize = property(get_PinholeSize, set_PinholeSize)
+
+        def get_PinholeSizeUnit(self):
+            self.node.get("PinholeSizeUnit")
+
+        def set_PinholeSizeUnit(self, value):
+        '''The units of the pin hole diameter for confocal microscopes - default:microns[µm].'''
+            self.node.set("PinholeSizeUnit", str(value))
+        PinholeSizeUnit = property(get_PinholeSizeUnit, set_PinholeSizeUnit)
+
         def get_AcquisitionMode(self):
             return self.node.get("AcquisitionMode")
 
@@ -528,14 +566,96 @@ class OMEXML(object):
             self.node.set("ContrastMethod", str(value))
         ContrastMethod = property(get_ContrastMethod, set_ContrastMethod)
 
-        def get_IlluminationType(self):
-            self.node.get("IlluminationType")
+        def get_ExcitationWavelength(self):
+            return get_float_attr(self.node, "ExcitationWavelength")
 
-        def set_IlluminationType(self, value):
-        '''The method of illumination used to capture the channel.'''
-            self.node.set("IlluminationType", str(value))
-        IlluminationType = property(get_IlluminationType, set_IlluminationType)
+        def set_ExcitationWavelength(self, value):
+            try:
+                value = float(value)
+                if value <= 0.0:
+                    raise ValueError
+                self.node.set("ExcitationWavelength", value)
+                if not self.get_ExcitationWavelengthUnit():
+                    default_unit = "nm"
+                    logging.info("Setting ExcitationWavelengthUnit to %s", default_unit)
+                    self.set_ExcitationWavelengthUnit(default_unit)
+            except ValueError:
+                logging.error("ExcitationWavelength must be a positive number")
+                raise
+        ExcitationWavelength = property(get_ExcitationWavelength, set_ExcitationWavelength)
 
+        def get_ExcitationWavelengthUnit(self):
+            return self.node.get("ExcitationWavelengthUnit")
+
+        def set_ExcitationWavelengthUnit(self, value):
+            '''The units of the wavelength of emission - default:nanometres[nm].'''
+            self.node.set("ExcitationWavelengthUnit", str(value))
+        ExcitationWavelengthUnit = property(get_ExcitationWavelengthUnit, set_ExcitationWavelengthUnit)
+
+        def get_Flour(self):
+            return self.node.get("Flour")
+
+        def set_Flour(self, value):
+            '''
+            The Fluor attribute is used for fluorescence images.
+            This is the name of the fluorophore used to produce this channel [plain text string]
+            '''
+            self.node.set("Flour", str(value))
+        Flour = property(get_Flour, set_Flour)
+
+        def get_NDFilter(self):
+            return get_float_attr(self.node, "NDFilter")
+
+        def set_NDFilter(self, value):
+            '''
+            Annotations-	
+            The NDfilter attribute is used to specify the combined effect of any neutral density filters used.
+            The amount of light the filter transmits at a maximum [units:none]
+            A fraction, as a value from 0.0 to 1.0.
+
+            NOTE: This was formerly described as "units optical density expressed as a PercentFraction".
+            This was how the field had been described in the schema from the beginning but all
+            the use of it has been in the opposite direction, i.e. as a amount transmitted,
+            not the amount blocked. This change has been made to make the model reflect this usage.
+            '''
+            try:
+                value = float(value)
+                if value < 0.0 or value > 1.0:
+                    raise ValueError
+                self.node.set("NDFilter", value)
+            except ValueError:
+                logging.error("NDFilter must be a number between 0.0 and 1.0")
+        NDFilter = property(get_NDFilter, set_NDFilter)
+
+        def get_PocketCellSetting(self):
+            return get_int_attr(self.node, "PocketCellSetting")
+
+        def set_PocketCellSetting(self, value):
+            '''The PockelCellSetting used for this channel. This is the amount the polarization of the beam is rotated by. [units:none]'''
+            try:
+                if not isinstance(value, int):
+                    raise ValueError
+                self.node.set("PocketCellSetting", value)
+            except ValueError:
+                logging.error("PocketCellSetting must be an integer")
+        PocketCellSetting = property(get_PocketCellSetting, set_PocketCellSetting)
+
+        def get_Color(self):
+            return get_int_attr(self.node, "Color")
+
+        def set_Color(self, value):
+            '''
+            A color used to render this channel - encoded as RGBA
+            The default value "-1" is #FFFFFFFF so solid white (it is a signed 32 bit value)
+            NOTE: Prior to the 2012-06 schema the default value was incorrect and produced a transparent red not solid white.
+            '''
+            try:
+                if not isinstance(value, int):
+                    raise ValueError
+                self.node.set("Color", value)
+            except ValueError:
+                logging.error("Color must be an integer")
+        Color = property(get_Color, set_Color)
 
         @property
         def LightSourceSettings(self):
@@ -572,7 +692,7 @@ class OMEXML(object):
                 if value > 1.0 or value < 0.0:
                     raise ValueError
                 self.node.set("Attenuation", value)
-            except Exception:
+            except ValueError:
                 logging.error("Attenuation must be a value between 0.0 and 1.0.")
                 raise
         
@@ -587,12 +707,14 @@ class OMEXML(object):
             '''
             try:
                 value = float(value)
-                if value < 0:
+                if value < 0.0:
                     raise ValueError
                 self.node.set("Wavelength", value)
                 if not self.get_WavelengthUnit():
-                    self.set_WavelengthUnit("nm")
-            except Exception:
+                    default_unit = "nm"
+                    logging.info("Setting WavelengthUnit to %s", default_unit)
+                    self.set_WavelengthUnit(default_unit)
+            except ValueError:
                 logging.error("Wavelength must be a positive number")
                 raise
         
@@ -668,7 +790,9 @@ class OMEXML(object):
                     raise ValueError
                 self.node.set("ReadOutRate", float(value))
                 if not self.get_ReadOutRateUnit():
-                    self.set_ReadOutRateUnit("MHz")
+                    default_unit = "MHz"
+                    logging.info("Setting ReadOutRateUnit to %s", default_unit)
+                    self.set_ReadOutRateUnit(default_unit)
             else:
                 logging.error("ReadOutRate value must be a positive number")
                 raise
@@ -1013,7 +1137,9 @@ class OMEXML(object):
         def set_TimeIncrement(self, value):
             self.node.set("TimeIncrement", value)
             if not self.get_TimeIncrementUnit():
-                self.set_TimeIncrementUnit("s")
+                default_unit = "s"
+                logging.info("Setting TimeIncrementUnit to %s", default_unit)
+                self.set_TimeIncrementUnit(default_unit)
         TimeIncrement = property(get_TimeIncrement, set_TimeIncrement)
     
         def get_TimeIncrementUnit(self):
@@ -1175,7 +1301,9 @@ class OMEXML(object):
         def set_Power(self, value):
             self.node.set("Power", value)
             if not self.get_PowerUnit():
-                self.set_PowerUnit("mW")
+                default_unit = "mW"
+                logging.info("Setting PowerUnit to %s", default_unit)
+                self.set_PowerUnit(default_unit)
         
         Power = property(get_Power, set_Power)
 
