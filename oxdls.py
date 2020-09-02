@@ -514,6 +514,203 @@ class OMEXML(object):
             self.node.set("SamplesPerPixel", str(value))
         SamplesPerPixel = property(get_SamplesPerPixel, set_SamplesPerPixel)
 
+        def get_AcquisitionMode(self):
+            return self.node.get("AcquisitionMode")
+
+        def set_AcquisitionMode(self, value):
+            self.node.set("AcquisitionMode", str(value))
+        AcquisitionMode = property(get_AcquisitionMode, set_AcquisitionMode)
+
+        def get_ContrastMethod(self):
+            return self.node.get("ContrastMethod")
+
+        def set_ContrastMethod(self, value):
+            self.node.set("ContrastMethod", str(value))
+        ContrastMethod = property(get_ContrastMethod, set_ContrastMethod)
+
+        def get_IlluminationType(self):
+            self.node.get("IlluminationType")
+
+        def set_IlluminationType(self, value):
+        '''The method of illumination used to capture the channel.'''
+            self.node.set("IlluminationType", str(value))
+        IlluminationType = property(get_IlluminationType, set_IlluminationType)
+
+
+        @property
+        def LightSourceSettings(self):
+            return OMEXML.Objective(self.node.find(qn(self.ns['ome'], "LightSourceSettings")))
+
+        @property
+        def DetectorSettings(self):
+            return OMEXML.Objective(self.node.find(qn(self.ns['ome'], "DetectorSettings")))
+
+
+    class LightSourceSettings(object):
+        def __init__(self, node):
+            self.node = node
+            self.ns = get_namespaces(node)
+
+        def get_ID(self):
+            return self.node.get("ID")
+        
+        def set_ID(self, value):
+            self.node.set("ID", value)
+        
+        ID = property(get_ID, set_ID)
+
+        def get_Attenuation(self):
+            return get_float_attr(self.node, "Attenuation")
+        
+        def set_Attenuation(self, value):
+            '''
+            The Attenuation of the light source [units:none]
+            A fraction, as a value from 0.0 to 1.0.
+            '''
+            try:
+                value = float(value)
+                if value > 1.0 or value < 0.0:
+                    raise ValueError
+                self.node.set("Attenuation", value)
+            except Exception:
+                logging.error("Attenuation must be a value between 0.0 and 1.0.")
+                raise
+        
+        Attenuation = property(get_Attenuation, set_Attenuation)
+
+        def get_Wavelength(self):
+            return get_float_attr(self.node, "Wavelength")
+        
+        def set_Wavelength(self, value):
+            '''
+            The Wavelength of the light source. Units are set by WavelengthUnit, default="nm".
+            '''
+            try:
+                value = float(value)
+                if value < 0:
+                    raise ValueError
+                self.node.set("Wavelength", value)
+                if not self.get_WavelengthUnit():
+                    self.set_WavelengthUnit("nm")
+            except Exception:
+                logging.error("Wavelength must be a positive number")
+                raise
+        
+        Wavelength = property(get_Wavelength, set_Wavelength)
+
+        def get_WavelengthUnit(self):
+            return self.node.get("WavelengthUnit")
+        
+        def set_WavelengthUnit(self, value):
+            '''Defaults to "nm"'''
+            self.node.set("WavelengthUnit", str(value))
+        
+        WavelengthUnit = property(get_WavelengthUnit, set_WavelengthUnit)
+
+
+    class DetectorSettings(object):
+        def __init__(self, node):
+            self.node = node
+            self.ns = get_namespaces(node)
+        
+        def get_ID(self):
+            return self.node.get("ID")
+        
+        def set_ID(self, value):
+            self.node.set("ID", value)
+        
+        ID = property(get_ID, set_ID)
+
+        def get_Gain(self):
+            return get_float_attr(self.node, "Gain")
+
+        def set_Gain(self, value):
+            self.node.set("Gain", value)
+        
+        Gain = property(get_Gain, set_Gain)
+
+        def get_Voltage(self):
+            return get_float_attr(self.node, "Voltage")
+
+        def set_Voltage(self, value):
+            self.node.set("Voltage", str(value))
+        
+        Voltage = property(get_Voltage, set_Voltage)
+
+        def get_VoltageUnits(self):
+            return self.node.get("VoltageUnits")
+
+        def set_VoltageUnits(self, value):
+            self.node.set("VoltageUnits", str(value))
+        
+        VoltageUnits = property(get_VoltageUnits, set_VoltageUnits)
+
+        def get_Zoom(self):
+            return get_float_attr(self.node, "Zoom")
+
+        def set_Zoom(self, value):
+            self.node.set("Zoom", value)
+        
+        Zoom = property(get_Zoom, set_Zoom)
+
+        def get_ReadOutRate(self):
+            return get_float_attr(self.node, "ReadOutRate")
+
+        def set_ReadOutRate(self, value):
+            '''
+            The speed at which the detector can count pixels.  {used:CCD,EMCCD}
+            This is the bytes per second that
+            can be read from the detector (like a baud rate).
+            Units are set by ReadOutRateUnit.
+            '''
+            try:
+                if value <= 0:
+                    raise ValueError
+                self.node.set("ReadOutRate", float(value))
+                if not self.get_ReadOutRateUnit():
+                    self.set_ReadOutRateUnit("MHz")
+            else:
+                logging.error("ReadOutRate value must be a positive number")
+                raise
+        
+        ReadOutRate = property(get_ReadOutRate, set_ReadOutRate)
+
+        def get_ReadOutRateUnit(self):
+            return self.node.get("ReadOutRateUnit")
+
+        def set_ReadOutRateUnit(self, value):
+            '''Defaults to "MHz"'''
+            self.node.set("ReadOutRateUnit", str(value))
+        
+        ReadOutRateUnit = property(get_ReadOutRateUnit, set_ReadOutRateUnit)        
+
+        def get_Binning(self):
+            return self.node.get("Binning")
+
+        def set_Binning(self, value):
+            '''Sets binning in the form "8x8". If an int is given, it will be changed into this form.'''
+            if isinstance(value, int):
+                value = "%ix%i" %(value, value)
+            self.node.set("Binning", value)
+        
+        Binning = property(get_Binning, set_Binning)
+
+        def get_Integration(self):
+            return get_int_attr(self.node, "Integration")
+
+        def set_Integration(self, value):
+            '''This is the number of sequential frames that get averaged, to improve the signal-to-noise ratio.'''
+            try:
+                if not isinstance(value, int) or value < 1:
+                    raise ValueError
+                self.node.set("Integration", int(value))
+            else:
+                logging.error("Integration value must be a positive int")
+                raise
+        
+        Integration = property(get_Integration, set_Integration)
+
+
     #---------------------
     # The following section is from the Allen Institute for Cell Science version of this file
     # which can be found at https://github.com/AllenCellModeling/aicsimageio/blob/master/aicsimageio/vendor/omexml.py
@@ -809,6 +1006,24 @@ class OMEXML(object):
             self.node.set("SizeC", str(value))
         SizeC = property(get_SizeC, set_SizeC)
 
+        def get_TimeIncrement(self):
+            '''Time increment (default TimeIncrementUnit is "s")'''
+            return get_float_attr(self.node, "TimeIncrement")
+
+        def set_TimeIncrement(self, value):
+            self.node.set("TimeIncrement", value)
+            if not self.get_TimeIncrementUnit():
+                self.set_TimeIncrementUnit("s")
+        TimeIncrement = property(get_TimeIncrement, set_TimeIncrement)
+    
+        def get_TimeIncrementUnit(self):
+            '''Default is "s"'''
+            return self.node.get("TimeIncrementUnit")
+
+        def set_TimeIncrementUnit(self, value):
+            return self.node.set("TimeIncrementUnit", str(value))
+        TimeIncrementUnit = property(get_TimeIncrementUnit, set_TimeIncrementUnit)
+
         def get_channel_count(self):
             '''The number of channels in the image
 
@@ -835,6 +1050,7 @@ class OMEXML(object):
                     new_channel.ID = str(uuid.uuid4())
                     new_channel.Name = new_channel.ID
                     new_channel.SamplesPerPixel = 1
+                    new_channel.Binning("1x1")
 
         channel_count = property(get_channel_count, set_channel_count)
 
@@ -897,6 +1113,7 @@ class OMEXML(object):
             data = self.node.findall(qn(self.ns['ome'], "TiffData"))[index]
             return OMEXML.TiffData(data)
 
+
     class Instrument(object):
         '''Representation of the OME/Instrument element'''
         def __init__(self, node):
@@ -912,78 +1129,185 @@ class OMEXML(object):
         ID = property(get_ID, set_ID)
 
         @property
-        def Detector(self):
-            return OMEXML.Detector(self.node.find(qn(self.ns['ome'], "Detector")))
+        def Microscope(self):
+            return OMEXML.Objective(self.node.find(qn(self.ns['ome'], "Microscope")))
+
+        @property
+        def LightSourceGroup(self):
+            return OMEXML.Objective(self.node.find(qn(self.ns['ome'], "LightSourceGroup")))
         
         @property
         def Objective(self):
             return OMEXML.Objective(self.node.find(qn(self.ns['ome'], "Objective")))
-
+        
+        @property
+        def Detector(self):
+            return OMEXML.Detector(self.node.find(qn(self.ns['ome'], "Detector")))
 
     def instrument(self, index=0):
         return self.Instrument(self.root_node.findall(qn(self.ns['ome'], "Instrument"))[index])
 
 
-    class Objective(object):
-        def __init__(self, node):
-            self.node = node
-            self.ns = get_namespaces(self.node)
+    class Microscope(ManufacturerSpec):
+
+        def get_Type(self):
+            return self.node.get("Type")
+        
+        def set_Type(self, value):
+            self.node.set("Type", value)
+        
+        Type = property(get_Type, set_Type)
+
+
+    class LightSourceGroup(ManufacturerSpec):
 
         def get_ID(self):
             return self.node.get("ID")
+        
+        def set_ID(self, value):
+            self.node.set("ID", str(value))
+        
+        ID = property(get_ID, set_ID)
+
+        def get_Power(self):
+            return get_float_attr(self.node, "Power")
+        
+        def set_Power(self, value):
+            self.node.set("Power", value)
+            if not self.get_PowerUnit():
+                self.set_PowerUnit("mW")
+        
+        Power = property(get_Power, set_Power)
+
+        def get_PowerUnit(self):
+            return self.node.get("PowerUnit")
+        
+        def set_PowerUnit(self, value):
+            self.node.set("PowerUnit", str(value))
+        
+        PowerUnit = property(get_PowerUnit, set_PowerUnit)
+
+    
+    class Detector(ManufacturerSpec):
+
+        def get_ID(self):
+            return self.node.get("ID")
+        
+        def set_ID(self, value):
+            self.node.set("ID", value)
+        
+        ID = property(get_ID, set_ID)
+
+        def get_Gain(self):
+            return get_float_attr(self.node, "Gain")
+
+        def set_Gain(self, value):
+            self.node.set("Gain", str(value))
+        
+        Gain = property(get_Gain, set_Gain)
+
+        def get_Voltage(self):
+            return get_float_attr(self.node, "Voltage")
+
+        def set_Voltage(self, value):
+            self.node.set("Voltage", str(value))
+        
+        Voltage = property(get_Voltage, set_Voltage)
+
+        def get_VoltageUnits(self):
+            return self.node.get("VoltageUnits")
+
+        def set_VoltageUnits(self, value):
+            self.node.set("VoltageUnits", str(value))
+        
+        VoltageUnits = property(get_VoltageUnits, set_VoltageUnits)
+
+        def get_Type(self):
+            return self.node.get("Type")
+        
+        def set_Type(self, value):
+            self.node.set("Type", str(value))
+        
+        Type = property(get_Type, set_Type)
+
+
+    class Objective(ManufacturerSpec):
+
+        def get_ID(self):
+            return self.node.get("ID")
+        
         def set_ID(self, value):
             self.node.set("ID", value)
         ID = property(get_ID, set_ID)
 
         def get_LensNA(self):
-            return self.node.get("LensNA")
+            return get_float_attr(self.node, "LensNA")
 
         def set_LensNA(self, value):
             self.node.set("LensNA", value)
         LensNA = property(get_LensNA, set_LensNA)
 
         def get_NominalMagnification(self):
-            return self.node.get("NominalMagnification")
+            return get_float_attr(self.node, "NominalMagnification")
+        
         def set_NominalMagnification(self, value):
             self.node.set("NominalMagnification", value)
+        
         NominalMagnification = property(get_NominalMagnification, set_NominalMagnification)
+
+        def get_CalibratedMagnification(self):
+            return get_float_attr(self.node, "CalibratedMagnification")
+        
+        def set_CalibratedMagnification(self, value):
+            self.node.set("CalibratedMagnification", value)
+        
+        CalibratedMagnification = property(get_CalibratedMagnification, set_CalibratedMagnification)
 
         def get_WorkingDistanceUnit(self):
             return get_int_attr(self.node, "WorkingDistanceUnit")
+        
         def set_WorkingDistanceUnit(self, value):
             self.node.set("WorkingDistanceUnit", str(value))
+        
         WorkingDistanceUnit = property(get_WorkingDistanceUnit, set_WorkingDistanceUnit)
-    
-    class Detector(object):
+
+
+    class ManufacturerSpec(object):
         def __init__(self, node):
             self.node = node
             self.ns = get_namespaces(self.node)
 
-        def get_ID(self):
-            return self.node.get("ID")
-        def set_ID(self, value):
-            self.node.set("ID", value)
-        ID = property(get_ID, set_ID)
-
-        def get_Gain(self):
-            return self.node.get("Gain")
-
-        def set_Gain(self, value):
-            self.node.set("Gain", value)
-        Gain = property(get_Gain, set_Gain)
-
+        def get_Manufacturer(self):
+            return self.node.get("Manufacturer")
+        
+        def set_Manufacturer(self, value):
+            self.node.set("Manufacturer", value)
+        
+        Manufacturer = property(get_Manufacturer, set_Manufacturer)
+    
         def get_Model(self):
             return self.node.get("Model")
+        
         def set_Model(self, value):
             self.node.set("Model", value)
+        
         Model = property(get_Model, set_Model)
 
-        def get_Type(self):
-            return get_int_attr(self.node, "Type")
-        def set_Type(self, value):
-            self.node.set("Type", str(value))
-        Type = property(get_Type, set_Type)
+        def get_SerialNumber(self):
+            return self.node.get("SerialNumber")
+        
+        def set_SerialNumber(self, value):
+            self.node.set("SerialNumber", value)
+        
+        SerialNumber = property(get_SerialNumber, set_SerialNumber)
 
+        def get_LotNumber(self):
+            return self.node.get("LotNumber")
+        
+        def set_LotNumber(self, value):
+            self.node.set("LotNumber", value)
+        
+        LotNumber = property(get_LotNumber, set_LotNumber)
 
 
     class StructuredAnnotations(dict):
