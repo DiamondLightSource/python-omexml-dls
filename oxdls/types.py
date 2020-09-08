@@ -15,25 +15,25 @@ class Types(object):
 
     # Simple
     class LSID(object):
-        def __init__(self, restriction=):
+        def __init__(self, restriction="\S+"):
             '''
             Setting the appropriate restriction converts LSID into different ID types
             e.g. annotation_id = LSID(); annotation_id.restriction = "Annotation" would create the AnnotationID type.
             See Simple Types @ https://www.openmicroscopy.org/Schemas/Documentation/Generated/OME-2016-06/ome.html
             '''
-            self.set_restriction(restriction)
+            self._set_restriction(restriction)
         
-        def set_restriction(self, value):
-            self.restriction = restriction
-            self.pattern = _create_pattern()
+        def _set_restriction(self, value):
+            self._restriction = restriction
+            self._create_pattern()
         
         def get_restriction(self):
-            return self.restriction
+            return self._restriction
         
-        restriction = property(get_restriction, set_restriction)
+        restriction = property(get_restriction, None)   # Restriction should be set upon creation.
         
         def _create_pattern(self):
-            return "(urn:lsid:([\w\-\.]+\.[\w\-\.]+)+:{0}:\S+)|({0}:\S+)".format(self.restriction)
+            self.pattern = "(urn:lsid:([\w\-\.]+\.[\w\-\.]+)+:{0}:\S+)|({0}:\S+)".format(self.restriction)
 
         def check_ID(self, value):
             return re.match(self.pattern, value, flags=re.IGNORECASE)
@@ -188,12 +188,17 @@ class Types(object):
 
 
     class Annotation(LSID):
-        def __init__(self, node, namespace=None):
+        def __init__(self, node, id_=None, namespace=None):
             super(LSID, self).__init__("Annotation")
             self.node
             self.ns = get_namespaces(self.node)
             if namespace is None:
                 namespace = get_namespaces(self.node)
+            if id_ is not None:
+                self.ID = id_
+            elif self.ID is None:
+                logging.warning("ID is required by the node")
+            self.node
             # We recommend the inclusion of a namespace for annotations you
             # define. If it is absent then we assume the annotation is to
             # use our (OME's) default interpretation for this type.
@@ -285,13 +290,17 @@ class Types(object):
         
 
     class Reference(LSID):
-        def __init__(self, node, restriction="\S+"):
+        def __init__(self, node, id_=None, restriction="\S+"):
             super(LSID, self).__init__(restriction)
+            if id_ is not None:
+                self.ID = id_
+            elif self.ID is None:
+                logging.warning("ID is required by the node")
             self.node
 
     class Settings(Reference):
-            def __init__(self, node, restriction):
-            super(Reference, self).__init__(node, restriction)
+            def __init__(self, node, id_=None, restriction="\S+"):
+            super(Reference, self).__init__(node, id_, restriction)
 
 
     class ManufacturerSpec(object):
@@ -329,12 +338,14 @@ class Types(object):
 
     class Shape(LSID):
 
-        def __init__(self, node):
+        def __init__(self, node, id_=None):
             super(LSID, self).__init__("Shape")
             self.node = node
             self.ns = get_namespaces(self.node)
-            self.fill_color = Color("Fill", self.node)
-            self.stroke_color = Color("Stroke", self.node)
+            if id_ is not None:
+                self.ID = id_
+            elif self.ID is None:
+                logging.warning("ID is required by the node")
         
         def get_FillColor(self):
             return self.node.get("FillColor")
@@ -539,9 +550,13 @@ class Types(object):
 
     class LightSource(ManufacturerSpec, LSID):
 
-        def __init__(self, node):
+        def __init__(self, node, id_=None):
             super(ManufacturerSpec, self).__init__()
             super(LSID, self). __init__("LightSource")
+            if id_ is not None:
+                self.ID = id_
+            elif self.ID is None:
+                logging.warning("ID is required by the node")
         
         def get_Power(self):
             return get_float_attr(self.node, "Power")
@@ -562,5 +577,3 @@ class Types(object):
             self.node.set("PowerUnit", str(value))
         
         PowerUnit = property(get_PowerUnit, set_PowerUnit)
-
-
