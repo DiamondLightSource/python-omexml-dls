@@ -33,6 +33,9 @@ logger = logging.getLogger(__file__)
 import re
 import uuid
 
+from types import Types
+from utils import *
+
 def xsd_now():
     '''Return the current time in xsd:dateTime format'''
     return datetime.datetime.now().isoformat()
@@ -41,10 +44,14 @@ DEFAULT_NOW = xsd_now()
 #
 # The namespaces
 #
-NS_BINARY_FILE = "http://www.openmicroscopy.org/Schemas/BinaryFile/2013-06"
+NS_DATE = "2016-06"
+NS_BINARY_FILE = "http://www.openmicroscopy.org/Schemas/{ns_date}/ome.xsd".format(ns_date=NS_DATE)
 NS_ORIGINAL_METADATA = "openmicroscopy.org/OriginalMetadata"
-NS_DEFAULT = "http://www.openmicroscopy.org/Schemas/{ns_key}/2013-06"
+NS_DEFAULT = "http://www.openmicroscopy.org/Schemas/{ns_key}/{ns_date}".format(ns_date=NS_DATE)
 NS_RE = r"http://www.openmicroscopy.org/Schemas/(?P<ns_key>.*)/[0-9/-]"
+
+NS_MODULO_ANNOTATION = "openmicroscopy.org/omero/dimension/modulo"
+NS_MODULO = "http://www.openmicroscopy.org/Schemas/Additions/2011-09"
 
 default_xml = """<?xml version="1.0" encoding="UTF-8"?>
 <!-- Warning: this comment is an OME-XML metadata block, which contains
@@ -52,9 +59,9 @@ crucial dimensional parameters and other important metadata. Please edit
 cautiously (if at all), and back up the original data before doing so.
 For more information, see the OME-TIFF documentation:
 https://docs.openmicroscopy.org/latest/ome-model/ome-tiff/ -->
-<OME xmlns="http://www.openmicroscopy.org/Schemas/OME/2016-06"
+<OME xmlns="{ns_ome_default}"
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xsi:schemaLocation="http://www.openmicroscopy.org/Schemas/OME/2016-06 http://www.openmicroscopy.org/Schemas/OME/2016-06/ome.xsd">
+     xsi:schemaLocation="{ns_ome_default} %(NS_BINARY_FILE)s">
     <Image ID="Image:0" Name="default.png">
         <AcquisitionDate>%(DEFAULT_NOW)s</AcquisitionDate>
         <Pixels BigEndian="false"
@@ -214,71 +221,7 @@ OM_COPYRIGHT = "Copyright"
 NC_LETTER = "letter"
 NC_NUMBER = "number"
 
-def page_name_original_metadata(index):
-    '''Get the key name for the page name metadata data for the indexed tiff page
-
-    These are TIFF IFD #'s 285+
-
-    index - zero-based index of the page
-    '''
-    return "PageName #%d" % index
-
-def get_text(node):
-    '''Get the contents of text nodes in a parent node'''
-    return node.text
-
-def set_text(node, text):
-    '''Set the text of a parent'''
-    node.text = text
-
-def qn(namespace, tag_name):
-    '''Return the qualified name for a given namespace and tag name
-
-    This is the ElementTree representation of a qualified name
-    '''
-    return "{%s}%s" % (namespace, tag_name)
-
-def split_qn(qn):
-    '''Split a qualified tag name or return None if namespace not present'''
-    m = re.match('\{(.*)\}(.*)', qn)
-    return m.group(1), m.group(2) if m else None
-
-def get_namespaces(node):
-    '''Get top-level XML namespaces from a node.'''
-    ns_lib = {'ome': None, 'sa': None, 'spw': None}
-    for child in node.iter():
-        ns = split_qn(child.tag)[0]
-        match = re.match(NS_RE, ns)
-        if match:
-            ns_key = match.group('ns_key').lower()
-            ns_lib[ns_key] = ns
-    return ns_lib
-
-def get_float_attr(node, attribute):
-    '''Cast an element attribute to a float or return None if not present'''
-    attr = node.get(attribute)
-    return None if attr is None else float(attr)
-
-def get_int_attr(node, attribute):
-    '''Cast an element attribute to an int or return None if not present'''
-    attr = node.get(attribute)
-    return None if attr is None else int(attr)
-
-def make_text_node(parent, namespace, tag_name, text):
-    '''Either make a new node and add the given text or replace the text
-
-    parent - the parent node to the node to be created or found
-    namespace - the namespace of the node's qualified name
-    tag_name - the tag name of  the node's qualified name
-    text - the text to be inserted
-    '''
-    qname = qn(namespace, tag_name)
-    node = parent.find(qname)
-    if node is None:
-        node = ElementTree.SubElement(parent, qname)
-    set_text(node, text)
-
-class OMEXML(object):
+class OMEXML(Types):
     '''Reads and writes OME-XML with methods to get and set it.
 
     The OMEXML class has four main purposes: to parse OME-XML, to output
@@ -413,20 +356,13 @@ class OMEXML(object):
                 self.root_node, qn(self.ns['sa'], "StructuredAnnotations"))
         return self.StructuredAnnotations(node)
 
-    class Image(object):
+    class Image(LSID):
         '''Representation of the OME/Image element'''
-        def __init__(self, node):
+
+        def __init__(self, node, image_id=None):
             '''Initialize with the DOM Image node'''
-            self.node = node
+            super(LSID, self).__init__("Image")
             self.ns = get_namespaces(self.node)
-
-        def get_ID(self):
-            return self.node.get("ID")
-
-        def set_ID(self, value):
-            self.node.set("ID", value)
-
-        ID = property(get_ID, set_ID)
 
         def get_Name(self):
             return self.node.get("Name")
@@ -489,17 +425,12 @@ class OMEXML(object):
         '''Return an image node by index'''
         return self.Image(self.root_node.findall(qn(self.ns['ome'], "Image"))[index])
 
-    class Channel(object):
+    class Channel(LSID, Color):
         '''The OME/Image/Pixels/Channel element'''
-        def __init__(self, node):
-            self.node = node
-            self.ns = get_namespaces(node)
 
-        def get_ID(self):
-            return self.node.get("ID")
-        def set_ID(self, value):
-            self.node.set("ID", value)
-        ID = property(get_ID, set_ID)
+        def __init__(self, node, channel_id=None):
+            super(LSID, self).__init__("Channel")
+            self.ns = get_namespaces(node)
 
         def get_Name(self):
             return self.node.get("Name")
@@ -640,23 +571,6 @@ class OMEXML(object):
                 logging.error("PocketCellSetting must be an integer")
         PocketCellSetting = property(get_PocketCellSetting, set_PocketCellSetting)
 
-        def get_Color(self):
-            return get_int_attr(self.node, "Color")
-
-        def set_Color(self, value):
-            '''
-            A color used to render this channel - encoded as RGBA
-            The default value "-1" is #FFFFFFFF so solid white (it is a signed 32 bit value)
-            NOTE: Prior to the 2012-06 schema the default value was incorrect and produced a transparent red not solid white.
-            '''
-            try:
-                if not isinstance(value, int):
-                    raise ValueError
-                self.node.set("Color", value)
-            except ValueError:
-                logging.error("Color must be an integer")
-        Color = property(get_Color, set_Color)
-
         @property
         def LightSourceSettings(self):
             return OMEXML.Objective(self.node.find(qn(self.ns['ome'], "LightSourceSettings")))
@@ -666,18 +580,12 @@ class OMEXML(object):
             return OMEXML.Objective(self.node.find(qn(self.ns['ome'], "DetectorSettings")))
 
 
-    class LightSourceSettings(object):
-        def __init__(self, node):
-            self.node = node
-            self.ns = get_namespaces(node)
+    class LightSourceSettings(Settings):
 
-        def get_ID(self):
-            return self.node.get("ID")
-        
-        def set_ID(self, value):
-            self.node.set("ID", value)
-        
-        ID = property(get_ID, set_ID)
+        def __init__(self, node, settings_id=None):
+            self.ns = get_namespaces(node)
+            super(Settings, self).__init__(node, settings_id)
+            
 
         def get_Attenuation(self):
             return get_float_attr(self.node, "Attenuation")
@@ -1256,19 +1164,31 @@ class OMEXML(object):
 
         @property
         def Microscope(self):
-            return OMEXML.Objective(self.node.find(qn(self.ns['ome'], "Microscope")))
+            return OMEXML.Microscope(self.node.find(qn(self.ns['ome'], "Microscope")))
 
         @property
         def LightSourceGroup(self):
-            return OMEXML.Objective(self.node.find(qn(self.ns['ome'], "LightSourceGroup")))
-        
+            return OMEXML.LightSourceGroup(self.node.findall(qn(self.ns['ome'], "LightSourceGroup"))[index])
+
         @property
         def Objective(self):
-            return OMEXML.Objective(self.node.find(qn(self.ns['ome'], "Objective")))
-        
+            return OMEXML.Objective(self.node.findall(qn(self.ns['ome'], "Objective"))[index])
+
         @property
         def Detector(self):
-            return OMEXML.Detector(self.node.find(qn(self.ns['ome'], "Detector")))
+            return OMEXML.Detector(self.node.findall(qn(self.ns['ome'], "Detector"))[index])
+
+        @property
+        def FilterSet(self):
+            return OMEXML.FilterSet(self.node.findall(qn(self.ns['ome'], "FilterSet"))[index])
+
+        @property
+        def Filter(self):
+            return OMEXML.Filter(self.node.findall(qn(self.ns['ome'], "Filter"))[index])
+
+        @property
+        def Dichroic(self):
+            return OMEXML.Dichroic(self.node.findall(qn(self.ns['ome'], "Dichroic"))[index])
 
     def instrument(self, index=0):
         return self.Instrument(self.root_node.findall(qn(self.ns['ome'], "Instrument"))[index])
@@ -1285,35 +1205,10 @@ class OMEXML(object):
         Type = property(get_Type, set_Type)
 
 
-    class LightSourceGroup(ManufacturerSpec):
+    class LightSourceGroup(ComplexTypes.LightSource):
+        def __init__(self, node):
+            super(ComplexTypes.LightSource, self).__init__(node)
 
-        def get_ID(self):
-            return self.node.get("ID")
-        
-        def set_ID(self, value):
-            self.node.set("ID", str(value))
-        
-        ID = property(get_ID, set_ID)
-
-        def get_Power(self):
-            return get_float_attr(self.node, "Power")
-        
-        def set_Power(self, value):
-            self.node.set("Power", value)
-            if not self.get_PowerUnit():
-                default_unit = "mW"
-                logging.info("Setting PowerUnit to %s", default_unit)
-                self.set_PowerUnit(default_unit)
-        
-        Power = property(get_Power, set_Power)
-
-        def get_PowerUnit(self):
-            return self.node.get("PowerUnit")
-        
-        def set_PowerUnit(self, value):
-            self.node.set("PowerUnit", str(value))
-        
-        PowerUnit = property(get_PowerUnit, set_PowerUnit)
 
     
     class Detector(ManufacturerSpec):
@@ -1399,44 +1294,47 @@ class OMEXML(object):
         
         WorkingDistanceUnit = property(get_WorkingDistanceUnit, set_WorkingDistanceUnit)
 
+    class FilterSet(ManufacturerSpec):
 
-    class ManufacturerSpec(object):
-        def __init__(self, node):
-            self.node = node
-            self.ns = get_namespaces(self.node)
+        def get_ID(self):
+            return self.node.get("ID")
+        
+        def set_ID(self, value):
+            self.node.set("ID", value)
+        ID = property(get_ID, set_ID)
 
-        def get_Manufacturer(self):
-            return self.node.get("Manufacturer")
-        
-        def set_Manufacturer(self, value):
-            self.node.set("Manufacturer", value)
-        
-        Manufacturer = property(get_Manufacturer, set_Manufacturer)
-    
-        def get_Model(self):
-            return self.node.get("Model")
-        
-        def set_Model(self, value):
-            self.node.set("Model", value)
-        
-        Model = property(get_Model, set_Model)
+    class Filter(ManufacturerSpec):
 
-        def get_SerialNumber(self):
-            return self.node.get("SerialNumber")
+        def get_Type(self):
+            return self.node.get("Type")
         
-        def set_SerialNumber(self, value):
-            self.node.set("SerialNumber", value)
-        
-        SerialNumber = property(get_SerialNumber, set_SerialNumber)
+        def set_Type(self, value):
+            self.node.set("Type", value)
+        Type = property(get_Type, set_Type)
 
-        def get_LotNumber(self):
-            return self.node.get("LotNumber")
+        def get_FilterWheel(self):
+            return self.node.get("FilterWheel")
         
-        def set_LotNumber(self, value):
-            self.node.set("LotNumber", value)
-        
-        LotNumber = property(get_LotNumber, set_LotNumber)
+        def set_FilterWheel(self, value):
+            self.node.set("FilterWheel", value)
+        FilterWheel = property(get_FilterWheel, set_FilterWheel)
 
+        def get_ID(self):
+            return self.node.get("ID")
+        
+        def set_ID(self, value):
+            self.node.set("ID", value)
+        ID = property(get_ID, set_ID)
+
+
+    class Dichroic(ManufacturerSpec):
+
+        def get_ID(self):
+            return self.node.get("ID")
+        
+        def set_ID(self, value):
+            self.node.set("ID", value)
+        ID = property(get_ID, set_ID)
 
     class StructuredAnnotations(dict):
         '''The OME/StructuredAnnotations element
@@ -1839,7 +1737,7 @@ class OMEXML(object):
             well.ID = well_id
             return well
 
-    class Well(object):
+    class Well(WellID, Color):
         def __init__(self, node):
             self.node = node
 
@@ -1953,7 +1851,7 @@ class OMEXML(object):
         PositionY = property(get_PositionY, set_PositionY)
 
         def get_Timepoint(self):
-            return self.node.get("Timepoint")
+            return self.node.get("Timepoint") 
 
         def set_Timepoint(self, value):
             if isinstance(value, datetime.datetime):
