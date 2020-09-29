@@ -226,7 +226,7 @@ class Types(object):
             description = self.node.find(qn(self.ns["ome"], "Description"))
             if description is None:
                 description = ElementTree.SubElement(
-                    self.node, qn(self.ns["ome"], "AcquisitionDate"))
+                    self.node, qn(self.ns["ome"], "Description"))
             try:
                 set_text(description, str(text))
             except ValueError:
@@ -288,7 +288,7 @@ class Types(object):
         
 
     class Reference(LSID):
-        def __init__(self, node, ID=None, restriction="\S+"):
+        def __init__(self, node, restriction="\S+", ID=None):
             super().__init__(restriction)
             if ID is not None:
                 self.ID = ID
@@ -297,8 +297,8 @@ class Types(object):
             self.node
 
     class Settings(Reference):
-        def __init__(self, node, ID=None, restriction="\S+"):
-            super().__init__(node, ID, restriction)
+        def __init__(self, node, restriction="\S+", ID=None):
+            super().__init__(node, restriction, ID)
 
 
     class ManufacturerSpec(object):
