@@ -6,11 +6,11 @@ import uuid
 
 from numpy import asarray
 
-from utils import *
-from type_checker import TypeChecker
+from .utils import *
+from .type_checker import TypeChecker
 
 class Types(object):
-    self.__init__(self):
+    def __init__(self):
         self.type_checker = TypeChecker()
 
     # Simple
@@ -46,7 +46,7 @@ class Types(object):
                 if not self.check_ID(value):
                     raise ValueError
                 self.node.set("ID", value)
-            Except ValueError:
+            except ValueError:
                 logging.error("ID must match pattern")
         ID = property(get_ID, set_ID)
 
@@ -64,8 +64,8 @@ class Types(object):
             if isinstance(value, int):
                 value = "%ix%i" %(value, value)
                 self.node.set("Binning", value)
-            elif is_instance(value, str):
-                if re.match(self.pattern, value)
+            elif isinstance(value, str):
+                if re.match(self.pattern, value):
                     self.node.set("Binning", value)
             logging.error('Binning must be either an integer or in the form "8x8"')
         Binning = property(get_Binning, set_Binning)
@@ -188,21 +188,19 @@ class Types(object):
 
 
     class Annotation(LSID):
-        def __init__(self, node, id_=None, namespace=None):
-            super(LSID, self).__init__("Annotation")
-            self.node
+        def __init__(self, node, ID=None, namespace=None):
+            super().__init__("Annotation")
+            self.node = node
             self.ns = get_namespaces(self.node)
-            if namespace is None:
-                namespace = get_namespaces(self.node)
-            if id_ is not None:
-                self.ID = id_
+            if self.ns is None:
+                self.ns  = get_namespaces(self.node)
+            if ID is not None:
+                self.ID = ID
             elif self.ID is None:
                 logging.warning("ID is required by the node")
-            self.node
             # We recommend the inclusion of a namespace for annotations you
             # define. If it is absent then we assume the annotation is to
             # use our (OME's) default interpretation for this type.
-            self.ns = namespace
             self.node.set("namespace", self.ns)
             self.set_ID(str(uuid.uuid4()))
             self.experimenter_id = LSID("Experimenter")
@@ -255,7 +253,7 @@ class Types(object):
                 for extra_annotation_refs in annotation_refs[value:]:
                     self.node.remove(extra_annotation_refs)
             else:
-                for _ in range(channel_count, value):
+                for _ in range(annotation_ref_count, value):
                     new_annotation_ref = Reference(
                         ElementTree.SubElement(self.node, qn(self.ns['ome'], "AnnotationRef")),
                         "Annotation")
@@ -290,17 +288,17 @@ class Types(object):
         
 
     class Reference(LSID):
-        def __init__(self, node, id_=None, restriction="\S+"):
-            super(LSID, self).__init__(restriction)
-            if id_ is not None:
-                self.ID = id_
+        def __init__(self, node, ID=None, restriction="\S+"):
+            super().__init__(restriction)
+            if ID is not None:
+                self.ID = ID
             elif self.ID is None:
                 logging.warning("ID is required by the node")
             self.node
 
     class Settings(Reference):
-            def __init__(self, node, id_=None, restriction="\S+"):
-            super(Reference, self).__init__(node, id_, restriction)
+        def __init__(self, node, ID=None, restriction="\S+"):
+            super().__init__(node, ID, restriction)
 
 
     class ManufacturerSpec(object):
@@ -338,12 +336,12 @@ class Types(object):
 
     class Shape(LSID):
 
-        def __init__(self, node, id_=None):
-            super(LSID, self).__init__("Shape")
+        def __init__(self, node, ID=None):
+            super().__init__("Shape")
             self.node = node
             self.ns = get_namespaces(self.node)
-            if id_ is not None:
-                self.ID = id_
+            if ID is not None:
+                self.ID = ID
             elif self.ID is None:
                 logging.warning("ID is required by the node")
         
@@ -532,7 +530,7 @@ class Types(object):
                 for extra_annotation_refs in annotation_refs[value:]:
                     self.node.remove(extra_annotation_refs)
             else:
-                for _ in range(channel_count, value):
+                for _ in range(annotation_ref_count, value):
                     new_annotation_ref = Reference(
                         ElementTree.SubElement(self.node, qn(self.ns['ome'], "AnnotationRef")),
                         "Annotation")
@@ -550,11 +548,11 @@ class Types(object):
 
     class LightSource(ManufacturerSpec, LSID):
 
-        def __init__(self, node, id_=None):
+        def __init__(self, node, ID=None):
             super(ManufacturerSpec, self).__init__()
-            super(LSID, self). __init__("LightSource")
-            if id_ is not None:
-                self.ID = id_
+            super(). __init__("LightSource")
+            if ID is not None:
+                self.ID = ID
             elif self.ID is None:
                 logging.warning("ID is required by the node")
         

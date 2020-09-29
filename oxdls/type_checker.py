@@ -1,3 +1,4 @@
+import logging
 
 class TypeChecker(object):
 
@@ -14,7 +15,7 @@ class TypeChecker(object):
         Colours: Red=-16776961, Green=16711935, Blue=65535
         '''
         if isinstance(value, int) and value >= -2147483648 and value <= 2147483647:
-            logging.error("%s must be an integer", self.attribute_name)
+            logging.error("Color must be an integer")
             return False
         return True
 
