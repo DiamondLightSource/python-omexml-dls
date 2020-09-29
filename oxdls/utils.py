@@ -1,4 +1,5 @@
 import re
+import logging
 import xml.etree.ElementTree
 from xml.etree import cElementTree as ElementTree
 import datetime
@@ -237,6 +238,40 @@ def get_int_attr(node, attribute):
     '''Cast an element attribute to an int or return None if not present'''
     attr = node.get(attribute)
     return None if attr is None else int(attr)
+
+def set_int_attr(node, attribute, value):
+    try:
+        value = int(value)
+        node.set(attribute, value)
+    except ValueError:
+        logging.error("%s %s is not/cannot be cast to an integer", attribute, value)
+
+def set_positive_int_attr(node, attribute, value):
+    try:
+        value = int(value)
+        if value >= 0:
+            node.set(attribute, value)
+            return
+        raise ValueError
+    except ValueError:
+        logging.error("%s %s is not/cannot be cast to a positive integer", attribute, value)
+
+def set_float_attr(node, attribute, value):
+    try:
+        value = float(value)
+        node.set(attribute, value)
+    except ValueError:
+        logging.error("%s %s is not/cannot be cast to a float", attribute, value)
+
+def set_positive_float_attr(node, attribute, value):
+    try:
+        value = float(value)
+        if value >= 0:
+            node.set(attribute, value)
+            return
+        raise ValueError
+    except ValueError:
+        logging.error("%s %s is not/cannot be cast to a float", attribute, value)
 
 def make_text_node(parent, namespace, tag_name, text):
     '''Either make a new node and add the given text or replace the text
