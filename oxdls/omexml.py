@@ -36,6 +36,8 @@ import uuid
 from .types import Types
 from .utils import *
 
+types = Types()
+
 class OMEXML(Types):
     '''Reads and writes OME-XML with methods to get and set it.
 
@@ -80,7 +82,6 @@ class OMEXML(Types):
 
     '''
     def __init__(self, xml=None):
-        types = Types()
         if xml is None:
             xml = default_xml
         if isinstance(xml, str):
@@ -141,7 +142,7 @@ class OMEXML(Types):
                 ElementTree.SubElement(new_image.node, qn(self.ns['ome'], "Pixels")))
             new_pixels.ID = str(uuid.uuid4())
             new_pixels.DimensionOrder = DO_XYCTZ
-            new_pixels.PixelType = PT_UINT8
+            new_pixels.Type = PT_UINT8
             new_pixels.SizeC = 1
             new_pixels.SizeT = 1
             new_pixels.SizeX = 512
@@ -202,33 +203,50 @@ class OMEXML(Types):
         AcquisitionDate = property(get_AcquisitionDate, set_AcquisitionDate)
 
         def get_ExperimenterRef(self):
-            return self.Reference(self.node.find(qn(self.ns['ome'], "ExperimenterRef")))
+            return self.Reference(self.node.find(qn(self.ns['ome'], "ExperimenterRef")), restriction="Experimenter")
         def set_ExperimenterRef(self, ID):
-            self.Reference(self.node.find(qn(self.ns['ome'], "ExperimenterRef")), ID, "Experimenter")
+            self.Reference(self.node.find(qn(self.ns['ome'], "ExperimenterRef")), restriction="Experimenter", ID=ID)
         ExperimenterRef = property(get_ExperimenterRef, set_ExperimenterRef)
 
         def get_ExperimentRef(self):
-            return self.Reference(self.node.find(qn(self.ns['ome'], "ExperimentRef")))
+            return self.Reference(self.node.find(qn(self.ns['ome'], "ExperimentRef")), restriction="Experiment")
         def set_ExperimentRef(self, ID):
-            self.Reference(self.node.find(qn(self.ns['ome'], "ExperimentRef")), ID, "Experiment")
+            self.Reference(self.node.find(qn(self.ns['ome'], "ExperimentRef")), restriction="Experiment", ID=ID)
         ExperimentRef = property(get_ExperimentRef, set_ExperimentRef)
 
+        def get_Description(self):
+            description = self.node.find(qn(self.ns["ome"], "Description"))
+            if description is None:
+                return None
+            return get_text(description)
+        def set_Description(self, text):
+            description = self.node.find(qn(self.ns["ome"], "Description"))
+            if description is None:
+                description = ElementTree.SubElement(
+                    self.node, qn(self.ns["ome"], "Description"))
+            try:
+                set_text(description, str(text))
+            except ValueError:
+                logging.error("Description must be castable to string")
+                raise
+        Description = property(get_Description, set_Description)
+
         def get_ExperimenterGroupRef(self):
-            return self.Reference(self.node.find(qn(self.ns['ome'], "ExperimenterGroupRef")))
+            return self.Reference(self.node.find(qn(self.ns['ome'], "ExperimenterGroupRef")), restriction="ExperimenterGroup")
         def set_ExperimenterGroupRef(self, ID):
-            self.Reference(self.node.find(qn(self.ns['ome'], "ExperimenterGroupRef")), ID, "ExperimenterGroup")
+            self.Reference(self.node.find(qn(self.ns['ome'], "ExperimenterGroupRef")), restriction="ExperimenterGroup", ID=ID)
         ExperimenterGroupRef = property(get_ExperimenterGroupRef, set_ExperimenterGroupRef)
 
         def get_InstrumentRef(self):
-            return self.Reference(self.node.find(qn(self.ns['ome'], "InstrumentRef")))
+            return self.Reference(self.node.find(qn(self.ns['ome'], "InstrumentRef")), restriction="Instrument")
         def set_InstrumentRef(self, ID):
-            self.Reference(self.node.find(qn(self.ns['ome'], "InstrumentRef")), ID, "Instrument")
+            self.Reference(self.node.find(qn(self.ns['ome'], "InstrumentRef")), restriction="Instrument", ID=ID)
         InstrumentRef = property(get_InstrumentRef, set_InstrumentRef)
 
         def get_ObjectiveSettings(self):
-            return self.Settings(self.node.find(qn(self.ns['ome'], "ObjectiveSettings")))
+            return self.Settings(self.node.find(qn(self.ns['ome'], "ObjectiveSettings")), restriction="Objective")
         def set_ObjectiveSettings(self, ID):
-            self.Settings(self.node.find(qn(self.ns['ome'], "ObjectiveSettings")), ID, "Objective")
+            self.Settings(self.node.find(qn(self.ns['ome'], "ObjectiveSettings")), restriction="Objective", ID=ID)
         ObjectiveSettings = property(get_ObjectiveSettings, set_ObjectiveSettings)
 
         @property
@@ -248,7 +266,7 @@ class OMEXML(Types):
 
         def roiref(self, index=0):
             '''The OME/Image/ROIRef element'''
-            return OMEXML.ROIRef(self.node.findall(qn(self.ns['ome'], "ROIRef"))[index])
+            return types.Reference(self.node.findall(qn(self.ns['ome'], "ROIRef"))[index], restriction="ROI")
 
         def get_roiref_count(self):
             return len(self.node.findall(qn(self.ns['ome'], "ROIRef")))
@@ -261,10 +279,33 @@ class OMEXML(Types):
                     self.node.remove(roiref_node)
             while(self.roiref_count < value):
                 iteration = self.roiref_count - 1
-                new_roiref = OMEXML.ROIRef(ElementTree.SubElement(self.node, qn(self.ns['ome'], "ROIRef")))
-                new_roiref.set_ID("ROI:" + str(iteration))
-
+                new_roiref = types.Reference(
+                    ElementTree.SubElement(self.node, qn(self.ns['ome'], "ROIRef")),
+                    ID="ROI:{}".format(iteration),
+                    restriction="ROI")
         roiref_count = property(get_roiref_count, set_roiref_count)
+
+        def annotationref(self, index=0):
+            '''The OME/Image/AnnotationRef element'''
+            return types.Reference(self.node.findall(qn(self.ns['ome'], "AnnotationRef"))[index], restriction="Annotation")
+
+        def get_annotationref_count(self):
+            return len(self.node.findall(qn(self.ns['ome'], "AnnotationRef")))
+        def set_annotationref_count(self, value):
+            '''Add or remove annotationrefs as needed'''
+            assert value > 0
+            if self.roiref_count > value:
+                roiref_nodes = self.node.find(qn(self.ns['ome'], "AnnotationRef"))
+                for roiref_node in roiref_nodes[value:]:
+                    self.node.remove(roiref_node)
+            while(self.roiref_count < value):
+                iteration = self.roiref_count - 1
+                new_roiref = types.Reference(
+                    ElementTree.SubElement(self.node, qn(self.ns['ome'], "AnnotationRef")),
+                    restriction="Annotation",
+                    ID="Annotation:{}".format(iteration))
+        annotationref_count = property(get_annotationref_count, set_annotationref_count)
+
 
     def image(self, index=0):
         '''Return an image node by index'''
@@ -306,18 +347,11 @@ class OMEXML(Types):
             The optional PinholeSize attribute allows specifying adjustable
             pin hole diameters for confocal microscopes. Units are set by PinholeSizeUnit - default:µm).
             '''
-            try:
-                value = float(value)
-                if value <= 0.0:
-                    raise ValueError
-                self.node.set("PinholeSize", value)
-                if not self.get_PinholeSizeUnit():
-                    default_unit = "µm"
-                    logging.info("Setting PinholeSizeUnit to %s", default_unit)
-                    self.set_PinholeSizeUnit(default_unit)
-            except ValueError:
-                logging.error("PinholeSize must be a positive number")
-                raise
+            set_float_attr(self.node, "PinholeSize", value)
+            if not self.get_PinholeSizeUnit():
+                default_unit = "µm"
+                logging.info("Setting PinholeSizeUnit to %s", default_unit)
+                self.set_PinholeSizeUnit(default_unit)
         PinholeSize = property(get_PinholeSize, set_PinholeSize)
 
         def get_PinholeSizeUnit(self):
@@ -325,7 +359,8 @@ class OMEXML(Types):
 
         def set_PinholeSizeUnit(self, value):
             '''The units of the pin hole diameter for confocal microscopes - default:microns[µm].'''
-            self.node.set("PinholeSizeUnit", str(value))
+            if types.type_checker.UnitsLength(value):
+                self.node.set("PinholeSizeUnit", str(value))
         PinholeSizeUnit = property(get_PinholeSizeUnit, set_PinholeSizeUnit)
 
         def get_AcquisitionMode(self):
@@ -751,7 +786,7 @@ class OMEXML(Types):
 
         PositionZUnit = property(get_PositionZUnit, set_PositionZUnit)
 
-    class Pixels(object):
+    class Pixels(types.LSID):
         '''The OME/Image/Pixels element
 
         The Pixels element represents the pixels in an OME image and, for
@@ -760,14 +795,9 @@ class OMEXML(Types):
         and it specifies the channel interleaving and channel depth.
         '''
         def __init__(self, node):
+            super().__init__("Pixels")
             self.node = node
             self.ns = get_namespaces(self.node)
-
-        def get_ID(self):
-            return self.node.get("ID")
-        def set_ID(self, value):
-            self.node.set("ID", value)
-        ID = property(get_ID, set_ID)
 
         def get_DimensionOrder(self):
             '''The ordering of image planes in the file
@@ -781,7 +811,7 @@ class OMEXML(Types):
             self.node.set("DimensionOrder", value)
         DimensionOrder = property(get_DimensionOrder, set_DimensionOrder)
 
-        def get_PixelType(self):
+        def get_Type(self):
             '''The pixel bit type, for instance PT_UINT8
 
             The pixel type specifies the datatype used to encode pixels
@@ -789,96 +819,95 @@ class OMEXML(Types):
             and set the pixel type.
             '''
             return self.node.get("Type")
+        def set_Type(self, value):
+            self.node.set("Type", value)
+        Type = property(get_Type, set_Type)
 
         def get_PhysicalSizeXUnit(self):
             '''The unit of length of a pixel in X direction.'''
             return self.node.get("PhysicalSizeXUnit")
         def set_PhysicalSizeXUnit(self, value):
-            self.node.set("PhysicalSizeXUnit", str(value))
+            if types.type_checker.UnitsLength(value):
+                self.node.set("PhysicalSizeXUnit", str(value))
         PhysicalSizeXUnit = property(get_PhysicalSizeXUnit, set_PhysicalSizeXUnit)
 
         def get_PhysicalSizeYUnit(self):
             '''The unit of length of a pixel in Y direction.'''
             return self.node.get("PhysicalSizeYUnit")
         def set_PhysicalSizeYUnit(self, value):
-            self.node.set("PhysicalSizeYUnit", str(value))
+            if types.type_checker.UnitsLength(value):
+                self.node.set("PhysicalSizeYUnit", str(value))
         PhysicalSizeYUnit = property(get_PhysicalSizeYUnit, set_PhysicalSizeYUnit)
 
         def get_PhysicalSizeZUnit(self):
             '''The unit of length of a voxel in Z direction.'''
             return self.node.get("PhysicalSizeZUnit")
         def set_PhysicalSizeZUnit(self, value):
-            self.node.set("PhysicalSizeZUnit", str(value))
+            if types.type_checker.UnitsLength(value):
+                self.node.set("PhysicalSizeZUnit", str(value))
         PhysicalSizeZUnit = property(get_PhysicalSizeZUnit, set_PhysicalSizeZUnit)
 
         def get_PhysicalSizeX(self):
             '''The length of a single pixel in X direction.'''
             return get_float_attr(self.node, "PhysicalSizeX")
         def set_PhysicalSizeX(self, value):
-            self.node.set("PhysicalSizeX", str(value))
+            set_positive_int_attr(self.node, "PhysicalSizeX", value)
         PhysicalSizeX = property(get_PhysicalSizeX, set_PhysicalSizeX)
 
         def get_PhysicalSizeY(self):
             '''The length of a single pixel in Y direction.'''
             return get_float_attr(self.node, "PhysicalSizeY")
         def set_PhysicalSizeY(self, value):
-            self.node.set("PhysicalSizeY", str(value))
+            set_positive_int_attr(self.node, "PhysicalSizeY", value)
         PhysicalSizeY = property(get_PhysicalSizeY, set_PhysicalSizeY)
 
         def get_PhysicalSizeZ(self):
             '''The size of a voxel in Z direction or None for 2D images.'''
             return get_float_attr(self.node, "PhysicalSizeZ")
         def set_PhysicalSizeZ(self, value):
-            self.node.set("PhysicalSizeZ", str(value))
+            set_positive_int_attr(self.node, "PhysicalSizeZ", value)
         PhysicalSizeZ = property(get_PhysicalSizeZ, set_PhysicalSizeZ)
-
-        def set_PixelType(self, value):
-            self.node.set("Type", value)
-        PixelType = property(get_PixelType, set_PixelType)
 
         def get_SizeX(self):
             '''The dimensions of the image in the X direction in pixels'''
             return get_int_attr(self.node, "SizeX")
         def set_SizeX(self, value):
-            self.node.set("SizeX", str(value))
+            set_positive_int_attr(self.node, "SizeX", value)
         SizeX = property(get_SizeX, set_SizeX)
 
         def get_SizeY(self):
             '''The dimensions of the image in the Y direction in pixels'''
             return get_int_attr(self.node, "SizeY")
         def set_SizeY(self, value):
-            self.node.set("SizeY", str(value))
+            set_positive_int_attr(self.node, "SizeY", value)
         SizeY = property(get_SizeY, set_SizeY)
 
         def get_SizeZ(self):
             '''The dimensions of the image in the Z direction in pixels'''
             return get_int_attr(self.node, "SizeZ")
-
         def set_SizeZ(self, value):
-            self.node.set("SizeZ", str(value))
+            set_positive_int_attr(self.node, "SizeZ", value)
         SizeZ = property(get_SizeZ, set_SizeZ)
 
         def get_SizeT(self):
             '''The dimensions of the image in the T direction in pixels'''
             return get_int_attr(self.node, "SizeT")
-
         def set_SizeT(self, value):
-            self.node.set("SizeT", str(value))
+            set_positive_int_attr(self.node, "SizeT", value)
         SizeT = property(get_SizeT, set_SizeT)
 
         def get_SizeC(self):
             '''The dimensions of the image in the C direction in pixels'''
             return get_int_attr(self.node, "SizeC")
         def set_SizeC(self, value):
-            self.node.set("SizeC", str(value))
+            set_positive_int_attr(self.node, "SizeC", value)
         SizeC = property(get_SizeC, set_SizeC)
 
         def get_TimeIncrement(self):
             '''Time increment (default TimeIncrementUnit is "s")'''
             return get_float_attr(self.node, "TimeIncrement")
-
         def set_TimeIncrement(self, value):
-            self.node.set("TimeIncrement", value)
+            set_float_attr(self.node, "TimeIncrement", value)
             if not self.get_TimeIncrementUnit():
                 default_unit = "s"
                 logging.info("Setting TimeIncrementUnit to %s", default_unit)
@@ -890,7 +919,10 @@ class OMEXML(Types):
             return self.node.get("TimeIncrementUnit")
 
         def set_TimeIncrementUnit(self, value):
-            return self.node.set("TimeIncrementUnit", str(value))
+            if types.type_checker.UnitsTime(value):
+                self.node.set("TimeIncrementUnit", str(value))
+            else:
+                logging.error("Invalid unit '%s'", value)
         TimeIncrementUnit = property(get_TimeIncrementUnit, set_TimeIncrementUnit)
 
         def get_channel_count(self):
@@ -913,14 +945,10 @@ class OMEXML(Types):
                 for channel in channels[value:]:
                     self.node.remove(channel)
             else:
-                for _ in range(channel_count, value):
+                for count in range(channel_count, value):
                     new_channel = OMEXML.Channel(
                         ElementTree.SubElement(self.node, qn(self.ns['ome'], "Channel")))
-                    new_channel.ID = str(uuid.uuid4())
-                    new_channel.Name = new_channel.ID
-                    new_channel.SamplesPerPixel = 1
-                    new_channel.Binning("1x1")
-
+                    new_channel.ID = "Channel:{}".format(count)
         channel_count = property(get_channel_count, set_channel_count)
 
         def Channel(self, index=0):
@@ -1717,25 +1745,6 @@ class OMEXML(Types):
             ref.set("ID", value)
         ImageRef = property(get_ImageRef, set_ImageRef)
 
-    class ROIRef(object):
-
-        def __init__(self, node):
-            self.node = node
-            self.ns = get_namespaces(self.node)
-
-        def get_ID(self):
-            return self.node.get("ID")
-
-        def set_ID(self, value):
-            '''
-            ID will automatically be in the format "ROI:value"
-            and must match the ROI ID (that uses the same
-            formatting)
-            '''
-            self.node.set("ID", "ROI:" + str(value))
-
-        ID = property(get_ID, set_ID)
-
     def get_roi_count(self):
         return len(self.root_node.findall(qn(self.ns['ome'], "ROI")))
 
@@ -1775,24 +1784,12 @@ class OMEXML(Types):
         '''Return an ROI node by index'''
         return self.ROI(self.root_node.findall(qn(self.ns['ome'], "ROI"))[index])
 
-    class ROI(object):
+    class ROI(types.LSID):
 
         def __init__(self, node):
+            super().__init__("ROI")
             self.node = node
             self.ns = get_namespaces(self.node)
-
-        def get_ID(self):
-            return self.node.get("ID")
-
-        def set_ID(self, value):
-            '''
-            ID will automatically be in the format "ROI:value"
-            and must match the ROIRef ID (that uses the same
-            formatting)
-            '''
-            self.node.set("ID", "ROI:" + str(value))
-
-        ID = property(get_ID, set_ID)
 
         def get_Name(self):
             return self.node.get("Name")
