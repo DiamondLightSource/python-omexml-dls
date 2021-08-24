@@ -336,6 +336,31 @@ class OMEXML(object):
         if self.ns['ome'] is None:
             raise Exception("Error: String not in OME-XML format")
 
+    @staticmethod
+    def _indent(elem, width=4, level=0):
+        """
+        Automatically indent XML for improved readability
+        Based on code by Erick M. Sprengel @ https://stackoverflow.com/a/33956544
+
+        Args:
+            elem: root
+            level (int, optional): Initial indent level. Defaults to 0.
+            width (int, optional): Number of spaces for each indent level. Defaults to 4.
+        """
+        i = "\n%s" % (" " * width * level)
+        if len(elem):
+            if not elem.text or not elem.text.strip():
+                elem.text = i + "  "
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+            for elem in elem:
+                OMEXML._indent(elem, level + 1)
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+        else:
+            if level and (not elem.tail or not elem.tail.strip()):
+                elem.tail = i
+
     def __str__(self):
         #
         # need to register the ome namespace because BioFormats expects
@@ -346,6 +371,7 @@ class OMEXML(object):
             ElementTree.register_namespace(ns_key, ns)
         ElementTree.register_namespace("om", NS_ORIGINAL_METADATA)
         result = StringIO()
+        OMEXML._indent(self.root_node)
         ElementTree.ElementTree(self.root_node).write(result,
                                                       encoding=uenc,
                                                       method="xml")
