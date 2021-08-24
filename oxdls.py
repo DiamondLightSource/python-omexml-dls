@@ -347,10 +347,11 @@ class OMEXML(object):
             width (int, optional): Number of spaces for each indent level. Defaults to 4.
             level (int, optional): Initial indent level. Defaults to 0.
         """
-        i = "\n%s" % (" " * width * level)
+        indent = " " * width
+        i = "\n%s" % (indent * level)
         if len(elem):
             if not elem.text or not elem.text.strip():
-                elem.text = i + "  "
+                elem.text = i + indent
             if not elem.tail or not elem.tail.strip():
                 elem.tail = i
             for elem in elem:
@@ -362,10 +363,8 @@ class OMEXML(object):
                 elem.tail = i
 
     def __str__(self):
-        #
         # need to register the ome namespace because BioFormats expects
         # that namespace to be the default or to be explicitly named "ome"
-        #
         for ns_key in ["ome", "sa", "spw"]:
             ns = self.ns.get(ns_key) or NS_DEFAULT.format(ns_key=ns_key)
             ElementTree.register_namespace(ns_key, ns)
