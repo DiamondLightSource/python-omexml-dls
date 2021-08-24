@@ -344,8 +344,8 @@ class OMEXML(object):
 
         Args:
             elem: root
-            level (int, optional): Initial indent level. Defaults to 0.
             width (int, optional): Number of spaces for each indent level. Defaults to 4.
+            level (int, optional): Initial indent level. Defaults to 0.
         """
         i = "\n%s" % (" " * width * level)
         if len(elem):
