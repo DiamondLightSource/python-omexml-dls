@@ -354,7 +354,7 @@ class OMEXML(object):
             if not elem.tail or not elem.tail.strip():
                 elem.tail = i
             for elem in elem:
-                OMEXML._indent(elem, level + 1)
+                OMEXML._indent(elem, width, level + 1)
             if not elem.tail or not elem.tail.strip():
                 elem.tail = i
         else:
