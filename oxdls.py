@@ -43,7 +43,7 @@ DEFAULT_NOW = xsd_now()
 #
 NS_BINARY_FILE = "http://www.openmicroscopy.org/Schemas/BinaryFile/2013-06"
 NS_ORIGINAL_METADATA = "openmicroscopy.org/OriginalMetadata"
-NS_DEFAULT = "http://www.openmicroscopy.org/Schemas/{ns_key}/2013-06"
+NS_DEFAULT = "http://www.openmicroscopy.org/Schemas/{ns_key}/2016-06"
 NS_RE = r"http://www.openmicroscopy.org/Schemas/(?P<ns_key>.*)/[0-9/-]"
 
 default_xml = """<?xml version="1.0" encoding="UTF-8"?>
@@ -72,8 +72,7 @@ https://docs.openmicroscopy.org/latest/ome-model/ome-tiff/ -->
             </Channel>
         </Pixels>
     </Image>
-  <StructuredAnnotations xmlns="{ns_sa_default}s"/>
-</OME>""".format(ns_ome_default=NS_DEFAULT.format(ns_key='ome'), ns_sa_default=NS_DEFAULT.format(ns_key='sa'))
+</OME>"""
 
 #
 # These are the OME-XML pixel types - not all supported by subimager
@@ -400,7 +399,6 @@ class OMEXML(object):
     def plates(self):
         return self.PlatesDucktype(self.root_node)
 
-    @property
     def structured_annotations(self):
         '''Return the structured annotations container
 
