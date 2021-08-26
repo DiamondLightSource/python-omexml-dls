@@ -43,7 +43,7 @@ DEFAULT_NOW = xsd_now()
 #
 NS_BINARY_FILE = "http://www.openmicroscopy.org/Schemas/BinaryFile/2013-06"
 NS_ORIGINAL_METADATA = "openmicroscopy.org/OriginalMetadata"
-NS_DEFAULT = "http://www.openmicroscopy.org/Schemas/{ns_key}/2013-06"
+NS_DEFAULT = "http://www.openmicroscopy.org/Schemas/{ns_key}/2016-06"
 NS_RE = r"http://www.openmicroscopy.org/Schemas/(?P<ns_key>.*)/[0-9/-]"
 
 default_xml = """<?xml version="1.0" encoding="UTF-8"?>
@@ -72,8 +72,7 @@ https://docs.openmicroscopy.org/latest/ome-model/ome-tiff/ -->
             </Channel>
         </Pixels>
     </Image>
-  <StructuredAnnotations xmlns="{ns_sa_default}s"/>
-</OME>""".format(ns_ome_default=NS_DEFAULT.format(ns_key='ome'), ns_sa_default=NS_DEFAULT.format(ns_key='sa'))
+</OME>"""
 
 #
 # These are the OME-XML pixel types - not all supported by subimager
@@ -85,10 +84,16 @@ PT_UINT8 = "uint8"
 PT_UINT16 = "uint16"
 PT_UINT32 = "uint32"
 PT_FLOAT = "float"
-PT_BIT = "bit"
 PT_DOUBLE = "double"
 PT_COMPLEX = "complex"
 PT_DOUBLECOMPLEX = "double-complex"
+PT_BIT = "bit"
+
+VALID_DATATYPES = (
+    PT_INT8, PT_INT16, PT_INT32, PT_UINT8, PT_UINT16, PT_UINT32,
+    PT_FLOAT, PT_DOUBLE, PT_COMPLEX, PT_DOUBLECOMPLEX, PT_BIT
+)
+
 #
 # The allowed dimension types
 #
@@ -400,7 +405,6 @@ class OMEXML(object):
     def plates(self):
         return self.PlatesDucktype(self.root_node)
 
-    @property
     def structured_annotations(self):
         '''Return the structured annotations container
 
@@ -726,6 +730,15 @@ class OMEXML(object):
             '''
             return self.node.get("Type")
 
+        def set_PixelType(self, value):
+            if value not in VALID_DATATYPES:
+                raise ValueError(
+                    "Invalid pixel type '%s'. "
+                    "Pixel type must be one of the following options: %s" % (value, VALID_DATATYPES))
+            self.node.set("Type", value)
+        
+        PixelType = property(get_PixelType, set_PixelType)
+
         def get_PhysicalSizeXUnit(self):
             '''The unit of length of a pixel in X direction.'''
             return self.node.get("PhysicalSizeXUnit")
@@ -767,10 +780,6 @@ class OMEXML(object):
         def set_PhysicalSizeZ(self, value):
             self.node.set("PhysicalSizeZ", str(value))
         PhysicalSizeZ = property(get_PhysicalSizeZ, set_PhysicalSizeZ)
-
-        def set_PixelType(self, value):
-            self.node.set("Type", value)
-        PixelType = property(get_PixelType, set_PixelType)
 
         def get_SizeX(self):
             '''The dimensions of the image in the X direction in pixels'''
