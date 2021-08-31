@@ -8,11 +8,9 @@
 #
 # Copyright (c) 2009-2014 Broad Institute
 # All rights reserved.
-
 """omexml.py read and write OME xml
 
 """
-
 from __future__ import absolute_import, unicode_literals
 
 import xml.etree.ElementTree
@@ -32,6 +30,10 @@ from functools import reduce
 logger = logging.getLogger(__file__)
 import re
 import uuid
+
+version_info = (1, 0, 4)
+__version__ = '.'.join(str(c) for c in version_info)
+
 
 def xsd_now():
     '''Return the current time in xsd:dateTime format'''

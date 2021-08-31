@@ -1,11 +1,13 @@
 import setuptools
 
+from oxdls import __version__
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="omexml-dls",
-    version="1.0.3",
+    version=__version__,
     author="Thomas M Fish",
     author_email="thomas.fish@diamond.ac.uk",
     description="Package for simple and consistent creation and parsing of OME metadata for B24 of Diamond Light Source Ltd.",
