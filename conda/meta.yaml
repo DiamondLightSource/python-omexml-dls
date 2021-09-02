@@ -1,5 +1,5 @@
 {% set name = "omexml-dls" %}
-{% set version = "1.0.4" %}
+{% set version = "1.1.0" %}
 
 package:
   name: {{ name|lower }}

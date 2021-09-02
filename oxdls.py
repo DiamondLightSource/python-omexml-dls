@@ -31,7 +31,7 @@ logger = logging.getLogger(__file__)
 import re
 import uuid
 
-version_info = (1, 0, 4)
+version_info = (1, 1, 0)
 __version__ = '.'.join(str(c) for c in version_info)
 
 
